@@ -41,24 +41,10 @@ socket.on('ready', function(data){
     // TODO: Your logic / user input here
     
     socket.emit('play', {
-      tournament_id: tournamentID,
+      tournament_id: 142857,
       player_turn_id: playerTurnID,
       game_id: gameID,
-      movement: 5
+      board: board,
+      movement: Math.random() * 10
     });
   });
-
-socket.on('finish', function(data){
-  var gameID = data.game_id;
-  var playerTurnID = data.player_turn_id;
-  var winnerTurnID = data.winner_turn_id;
-  var board = data.board;
-  
-  // TODO: Your cleaning board logic here
-  
-  socket.emit('player_ready', {
-    tournament_id: tournamentID,
-    player_turn_id: playerTurnID,
-    game_id: gameID
-  });
-});
