@@ -24,3 +24,5 @@ socket.on('ready', function(data){
     var playerTurnID = data.player_turn_id;
     var board = data.board;
   });
+
+  
