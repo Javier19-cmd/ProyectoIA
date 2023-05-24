@@ -1,5 +1,5 @@
 const io = require('socket.io-client')
-const serverUrl = "http://localhost:4000"
+const serverUrl = "http://192.168.5.122:4000"
 const socket = io(serverUrl)
 
 // Conectar.
@@ -7,7 +7,7 @@ socket.on('connect', () => {
     console.log("Connected to server")
 
     socket.emit('signin', {
-        user_name: "Willy",
+        user_name: "Willy2",
         tournament_id: 142857,
         user_role: 'player'
     })
