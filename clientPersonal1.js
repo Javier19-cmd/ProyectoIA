@@ -1,265 +1,225 @@
-const io = require('socket.io-client')
-const serverUrl = "http://192.168.5.122:4000"
-const socket = io(serverUrl)
+const io = require('socket.io-client');
+const serverUrl = "http://192.168.5.122:4000";
+const socket = io(serverUrl);
 
 const INF = Infinity;
 
-function alphabeta(tablero, profundidad, alpha, beta, jugador_maximizador) {
-    if (profundidad === 0 || tableroEsTerminal(tablero)) {
-        return evaluar(tablero);
-    }
-
-    if (jugador_maximizador) {
-        let valor_max = -INF;
-        for (let columna = 0; columna < 7; columna++) {
-            if (movimientoValido(tablero, columna)) {
-                const nuevo_tablero = hacerMovimiento(tablero, columna, jugador_maximizador);
-                const valor = alphabeta(nuevo_tablero, profundidad - 1, alpha, beta, false);
-                valor_max = Math.max(valor_max, valor);
-                alpha = Math.max(alpha, valor_max);
-                if (beta <= alpha) {
-                    break;
-                }
-            }
-        }
-        return valor_max;
-    } else {
-        let valor_min = INF;
-        for (let columna = 0; columna < 7; columna++) {
-            if (movimientoValido(tablero, columna)) {
-                const nuevo_tablero = hacerMovimiento(tablero, columna, jugador_maximizador);
-                const valor = alphabeta(nuevo_tablero, profundidad - 1, alpha, beta, true);
-                valor_min = Math.min(valor_min, valor);
-                beta = Math.min(beta, valor_min);
-                if (beta <= alpha) {
-                    break;
-                }
-            }
-        }
-        return valor_min;
-    }
-}
-
-function tableroEsTerminal(tablero) {
-    // Verificar si hay un ganador
-    if (hayGanador(tablero, 1) || hayGanador(tablero, 2)) {
-        return true;
-    }
-
-    // Verificar si el tablero está lleno
-    for (let fila of tablero) {
-        if (fila.includes(0)) {
-            return false;
-        }
-    }
-    return true;
-}
-
-function hayGanador(tablero, jugador) {
-    // Verificar filas
-    for (let fila = 0; fila < 6; fila++) {
-        for (let columna = 0; columna < 4; columna++) {
-            if (
-                tablero[fila][columna] === jugador &&
-                tablero[fila][columna + 1] === jugador &&
-                tablero[fila][columna + 2] === jugador &&
-                tablero[fila][columna + 3] === jugador
-            ) {
-                return true;
-            }
-        }
-    }
-
-    // Verificar columnas
-    for (let columna = 0; columna < 7; columna++) {
-        for (let fila = 0; fila < 3; fila++) {
-            if (
-                tablero[fila][columna] === jugador &&
-                tablero[fila + 1][columna] === jugador &&
-                tablero[fila + 2][columna] === jugador &&
-                tablero[fila + 3][columna] === jugador
-            ) {
-                return true;
-            }
-        }
-    }
-
-    // Verificar diagonales ascendentes
-    for (let fila = 0; fila < 3; fila++) {
-        for (let columna = 0; columna < 4; columna++) {
-            if (
-                tablero[fila][columna] === jugador &&
-                tablero[fila + 1][columna + 1] === jugador &&
-                tablero[fila + 2][columna + 2] === jugador &&
-                tablero[fila + 3][columna + 3] === jugador
-            ) {
-                return true;
-            }
-        }
-    }
-
-    // Verificar diagonales descendentes
-    for (let fila = 0; fila < 3; fila++) {
-        for (let columna = 3; columna < 7; columna++) {
-            if (
-                tablero[fila][columna] === jugador &&
-                tablero[fila + 1][columna - 1] === jugador &&
-                tablero[fila + 2][columna - 2] === jugador &&
-                tablero[fila + 3][columna - 3] === jugador
-            ) {
-                return true;
-            }
-        }
-    }
-
-    return false;
-}
-
-function movimientoValido(tablero, columna) {
-    return tablero[0][columna] === 0;
-}
-
-function hacerMovimiento(tablero, columna, jugador) {
-    const nuevo_tablero = tablero.map((fila) => [...fila]);
-    for (let fila = 5; fila >= 0; fila--) {
-        if (nuevo_tablero[fila][columna] === 0) {
-            nuevo_tablero[fila][columna] = jugador;
-            return nuevo_tablero;
-        }
-    }
-}
-
-function obtenerMejorMovimiento(tablero, valorMax, jugador_maximizador) {
-  const movimientosValidos = [];
-  for (let columna = 0; columna < 7; columna++) {
-      if (movimientoValido(tablero, columna)) {
-          const nuevo_tablero = hacerMovimiento(tablero, columna, jugador_maximizador ? 1 : 2);
-          const valor = alphabeta(nuevo_tablero, 0, -INF, INF, !jugador_maximizador);
-          if (valor === valorMax) {
-              movimientosValidos.push(columna);
-          }
-      }
+function alphabeta(board, depth, alpha, beta, maximizingPlayer) {
+  if (depth === 0 || isTerminal(board)) {
+    return evaluate(board);
   }
 
-  console.log("Movimientos válidos: ", movimientosValidos);
-
-  // Verificar si hay movimientos válidos antes de devolver uno aleatorio
-  if (movimientosValidos.length > 0) {
-      return movimientosValidos[Math.floor(Math.random() * movimientosValidos.length)];
+  if (maximizingPlayer) {
+    let maxEval = -INF;
+    for (let column = 0; column < 7; column++) {
+      if (isValidMove(board, column)) {
+        const newBoard = makeMove(board, column, 1);
+        const eval = alphabeta(newBoard, depth - 1, alpha, beta, false);
+        maxEval = Math.max(maxEval, eval);
+        alpha = Math.max(alpha, maxEval);
+        if (beta <= alpha) {
+          break;
+        }
+      }
+    }
+    return maxEval;
   } else {
-      // Si no hay movimientos válidos, devolver un movimiento aleatorio
-      const columnasDisponibles = [];
-      for (let columna = 0; columna < 7; columna++) {
-          if (movimientoValido(tablero, columna)) {
-              columnasDisponibles.push(columna);
-          }
+    let minEval = INF;
+    for (let column = 0; column < 7; column++) {
+      if (isValidMove(board, column)) {
+        const newBoard = makeMove(board, column, 2);
+        const eval = alphabeta(newBoard, depth - 1, alpha, beta, true);
+        minEval = Math.min(minEval, eval);
+        beta = Math.min(beta, minEval);
+        if (beta <= alpha) {
+          break;
+        }
       }
-      return columnasDisponibles[Math.floor(Math.random() * columnasDisponibles.length)];
+    }
+    return minEval;
   }
 }
 
-function evaluar(tablero) {
-  // Implementa tu función de evaluación personalizada aquí
-  // Puedes asignar puntajes a diferentes situaciones del tablero y calcular una puntuación global para el estado actual del juego
-  // Por ejemplo, puedes dar más puntos por tener fichas en línea y restar puntos por tener fichas del oponente en línea
-  // La función debe devolver un valor numérico que representa la evaluación del tablero
-
-  // Aquí hay un ejemplo simple de evaluación que cuenta el número de fichas en el tablero
-  let puntaje = 0;
-  for (let fila of tablero) {
-      for (let casilla of fila) {
-          if (casilla === 1) {
-              puntaje += 1; // Ficha del jugador 1
-          } else if (casilla === 2) {
-              puntaje -= 1; // Ficha del jugador 2
-          }
-      }
+function isTerminal(board) {
+  if (hasWinner(board, 1) || hasWinner(board, 2)) {
+    return true;
   }
-  return puntaje;
+
+  for (let row of board) {
+    if (row.includes(0)) {
+      return false;
+    }
+  }
+  return true;
 }
 
-// Conectar.
+function hasWinner(board, player) {
+  // Check rows
+  for (let row = 0; row < 6; row++) {
+    for (let col = 0; col < 4; col++) {
+      if (
+        board[row][col] === player &&
+        board[row][col + 1] === player &&
+        board[row][col + 2] === player &&
+        board[row][col + 3] === player
+      ) {
+        return true;
+      }
+    }
+  }
+
+  // Check columns
+  for (let col = 0; col < 7; col++) {
+    for (let row = 0; row < 3; row++) {
+      if (
+        board[row][col] === player &&
+        board[row + 1][col] === player &&
+        board[row + 2][col] === player &&
+        board[row + 3][col] === player
+      ) {
+        return true;
+      }
+    }
+  }
+
+  // Check ascending diagonals
+  for (let row = 0; row < 3; row++) {
+    for (let col = 0; col < 4; col++) {
+      if (
+        board[row][col] === player &&
+        board[row + 1][col + 1] === player &&
+        board[row + 2][col + 2] === player &&
+        board[row + 3][col + 3] === player
+      ) {
+        return true;
+      }
+    }
+  }
+
+  // Check descending diagonals
+  for (let row = 0; row < 3; row++) {
+    for (let col = 3; col < 7; col++) {
+      if (
+        board[row][col] === player &&
+        board[row + 1][col - 1] === player &&
+        board[row + 2][col - 2] === player &&
+        board[row + 3][col - 3] === player
+      ) {
+        return true;
+      }
+    }
+  }
+
+  return false;
+}
+
+function isValidMove(board, column) {
+  return board[0][column] === 0;
+}
+
+function makeMove(board, column, player) {
+  const newBoard = board.map((row) => [...row]);
+  for (let row = 5; row >= 0; row--) {
+    if (newBoard[row][column] === 0) {
+      newBoard[row][column] = player;
+      return newBoard;
+    }
+  }
+}
+
+function evaluate(board) {
+  let score = 0;
+  for (let row of board) {
+    for (let cell of row) {
+      if (cell === 1) {
+        score += 1;
+      } else if (cell === 2) {
+        score -= 1;
+      }
+    }
+  }
+  return score;
+}
+
+// Connect to the server
 socket.on('connect', () => {
-    console.log("Connected to server")
+  console.log("Connected to server");
 
-    socket.emit('signin', {
-        user_name: "Willy2",
-        tournament_id: 142857,
-        user_role: 'player'
-    })
-})
-
-// Sign in correcto.
-socket.on('ok_signin', () => {
-    console.log("Login")
-})
-
-// Ready.
-socket.on('ready', function(data){
-    var gameID = data.game_id;
-    var playerTurnID = data.player_turn_id;
-    var board = data.board;
+  socket.emit('signin', {
+    user_name: "Willy2",
+    tournament_id: 142857,
+    user_role: 'player'
   });
-
-  // Finish.
-socket.on('finish', function(data){
-    var gameID = data.game_id;
-    var playerTurnID = data.player_turn_id;
-    var winnerTurnID = data.winner_turn_id;
-    var board = data.board;
 });
 
-socket.on('ready', function(data){
-    var gameID = data.game_id;
-    var playerTurnID = data.player_turn_id;
-    var board = data.board;
+// Sign in successful
+socket.on('ok_signin', () => {
+  console.log("Login");
+});
 
-    console.log("Board: ", board)
-    
-    // TODO: Your logic / user input here
+// Ready
+socket.on('ready', function (data) {
+  var gameID = data.game_id;
+  var playerTurnID = data.player_turn_id;
+  var board = data.board;
 
-    const tablero = board.map((fila) => [...fila])
-    const profundidad = 6
-    const alpha = -INF
-    const beta = INF
-    const jugador_maximizador = playerTurnID
-    const resultado = alphabeta(tablero, profundidad, alpha, beta, jugador_maximizador)
-    const move = obtenerMejorMovimiento(tablero, resultado, jugador_maximizador)
+  console.log("Board: ", board);
 
-    // var move = Math.floor(Math.random() * 7)
+  const clonedBoard = board.map((row) => [...row]);
+  const depth = 6;
+  const alpha = -INF;
+  const beta = INF;
+  const maximizingPlayer = playerTurnID === 1;
+  const result = alphabeta(clonedBoard, depth, alpha, beta, maximizingPlayer);
+  const move = getBestMove(clonedBoard, result, maximizingPlayer);
 
-    console.log("Movimiento: ", move)
-    console.log(" Tablero: ", tablero)
-    
-    socket.emit('play', {
-      tournament_id: 142857,
-      player_turn_id: playerTurnID,
-      game_id: gameID,
-      board: board,
-      movement:  move
-    });
+  console.log("Move: ", move);
+  console.log("Board: ", clonedBoard);
 
-    console.log(board)
+  socket.emit('play', {
+    tournament_id: 142857,
+    player_turn_id: playerTurnID,
+    game_id: gameID,
+    board: clonedBoard,
+    movement: move
   });
+});
 
+socket.on('finish', function (data) {
+  var gameID = data.game_id;
+  var playerTurnID = data.player_turn_id;
+  var winnerTurnID = data.winner_turn_id;
+  var board = data.board;
 
-  socket.on('finish', function(data){
-    var gameID = data.game_id;
-    var playerTurnID = data.player_turn_id;
-    var winnerTurnID = data.winner_turn_id;
-    var board = data.board;
-    
-    // TODO: Your cleaning board logic here
-    
-    console.log("Ganador: ", winnerTurnID)
-    console.log(board)
-    socket.emit('player_ready', {
-      tournament_id: 142857,
-      player_turn_id: playerTurnID,
-      game_id: gameID
-    });
-  });
+  // Your cleaning board logic here
 
-// socket.on('disconnect', function() {
-//   console.log('Desconectado');
-// });
+  console.log("Winner: ", winnerTurnID);
+  console.log(board);
+  socket.emit('player_ready', {
+    tournament_id: 142857,
+    player_turn_id: playerTurnID,
+    game_id: gameID
+  });
+});
+
+function getBestMove(board, maxEval, maximizingPlayer) {
+  const validMoves = [];
+  for (let column = 0; column < 7; column++) {
+    if (isValidMove(board, column)) {
+      const newBoard = makeMove(board, column, maximizingPlayer ? 1 : 2);
+      const eval = alphabeta(newBoard, 0, -INF, INF, !maximizingPlayer);
+      if (eval === maxEval) {
+        validMoves.push(column);
+      }
+    }
+  }
+
+  console.log("Valid moves: ", validMoves);
+
+  if (validMoves.length > 0) {
+    return validMoves[Math.floor(Math.random() * validMoves.length)];
+  } else {
+    const availableColumns = board[0].map((_, index) => index);
+    return availableColumns[Math.floor(Math.random() * availableColumns.length)];
+  }
+}
