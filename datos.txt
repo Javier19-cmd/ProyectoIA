@@ -1,3 +1,15 @@
 Router: Linksys01902
 Passwd: acu0xetc8z
 Puerto: 4000
+
+
+--------------------------------
+
+Servidor local del debian.
+
+1. Correr el comando sudo ip address show y buscar el segundo inet: la ip podría ser algo como 192.168.5.122. (Ver el grupo A para ver cómo está la IP)
+2. Para correr el backend se pone este comando node ./bin/www --tid=142857 --rrt=2 --port 4000 --game=connect4.
+4. Para correr el frontend se pone este comando: gulp serve.
+5. Al correr el frontend se tiene que ir al navegador y escribir localhost:3001/#/
+6. La página va a abrir un modal en donde se pone lo siguiente: http://localhost:4000 y luego se abre otro modal en donde se pone el Tournament ID que es 142857.
+7. Conectar los 2n clientes para jugar.
