@@ -4,7 +4,9 @@ const socket = io(serverUrl);
 
 const INF = Infinity;
 
+// Algoritmo Alpha-Beta
 function alphabeta(board, depth, alpha, beta, maximizingPlayer) {
+  // Condición de salida: alcanzado el límite de profundidad o estado terminal
   if (depth === 0 || isTerminal(board)) {
     return evaluate(board);
   }
@@ -40,6 +42,7 @@ function alphabeta(board, depth, alpha, beta, maximizingPlayer) {
   }
 }
 
+// Verifica si el tablero alcanzó un estado terminal (ganador o empate)
 function isTerminal(board) {
   if (hasWinner(board, 1) || hasWinner(board, 2)) {
     return true;
@@ -53,8 +56,9 @@ function isTerminal(board) {
   return true;
 }
 
+// Verifica si un jugador ha ganado en el tablero dado
 function hasWinner(board, player) {
-  // Check rows
+  // Verificar filas
   for (let row = 0; row < 6; row++) {
     for (let col = 0; col < 4; col++) {
       if (
@@ -68,7 +72,7 @@ function hasWinner(board, player) {
     }
   }
 
-  // Check columns
+  // Verificar columnas
   for (let col = 0; col < 7; col++) {
     for (let row = 0; row < 3; row++) {
       if (
@@ -82,7 +86,7 @@ function hasWinner(board, player) {
     }
   }
 
-  // Check ascending diagonals
+  // Verificar diagonales ascendentes
   for (let row = 0; row < 3; row++) {
     for (let col = 0; col < 4; col++) {
       if (
@@ -96,7 +100,7 @@ function hasWinner(board, player) {
     }
   }
 
-  // Check descending diagonals
+  // Verificar diagonales descendentes
   for (let row = 0; row < 3; row++) {
     for (let col = 3; col < 7; col++) {
       if (
@@ -113,10 +117,12 @@ function hasWinner(board, player) {
   return false;
 }
 
+// Verifica si un movimiento es válido en el tablero dado
 function isValidMove(board, column) {
   return board[0][column] === 0;
 }
 
+// Realiza un movimiento en el tablero dado para el jugador especificado
 function makeMove(board, column, player) {
   const newBoard = board.map((row) => [...row]);
   for (let row = 5; row >= 0; row--) {
@@ -127,6 +133,7 @@ function makeMove(board, column, player) {
   }
 }
 
+// Evalúa el tablero actual para el jugador maximizante
 function evaluate(board) {
   let score = 0;
   const mobilityScore = getMobilityScore(board);
@@ -142,6 +149,7 @@ function evaluate(board) {
   return score + mobilityScore;
 }
 
+// Calcula la puntuación de movilidad del tablero (número de movimientos válidos disponibles)
 function getMobilityScore(board) {
   let mobilityScore = 0;
   for (let column = 0; column < 7; column++) {
@@ -152,10 +160,11 @@ function getMobilityScore(board) {
   return mobilityScore;
 }
 
-// Connect to the server
+// Conexión al servidor
 socket.on('connect', () => {
   console.log("Connected to server");
 
+  // Inicio de sesión en el torneo
   socket.emit('signin', {
     user_name: "Willy",
     tournament_id: 142857,
@@ -163,12 +172,12 @@ socket.on('connect', () => {
   });
 });
 
-// Sign in successful
+// Inicio de sesión exitoso
 socket.on('ok_signin', () => {
   console.log("Login");
 });
 
-// Ready
+// Listo para jugar
 socket.on('ready', function (data) {
   var gameID = data.game_id;
   var playerTurnID = data.player_turn_id;
@@ -187,6 +196,7 @@ socket.on('ready', function (data) {
   console.log("Move: ", move);
   console.log("Board: ", clonedBoard);
 
+  // Emitir el movimiento al servidor
   socket.emit('play', {
     tournament_id: 142857,
     player_turn_id: playerTurnID,
@@ -196,30 +206,40 @@ socket.on('ready', function (data) {
   });
 });
 
+// Juego finalizado
 socket.on('finish', function (data) {
   var gameID = data.game_id;
   var playerTurnID = data.player_turn_id;
   var winnerTurnID = data.winner_turn_id;
   var board = data.board;
 
-  // Your cleaning board logic here
+  // Lógica para reiniciar el tablero aquí
 
   console.log("Winner: ", winnerTurnID);
   console.log(board);
+
+  // Indicar al servidor que el jugador está listo para jugar nuevamente
   socket.emit('player_ready', {
     tournament_id: 142857,
     player_turn_id: playerTurnID,
     game_id: gameID
   });
-});
+})
 
+/**
+ * Obtiene el mejor movimiento a partir de la evaluación del tablero y el jugador maximizante
+ * @param {Array} board - El tablero actual
+ * @param {Number} maxEval - La evaluación máxima obtenida
+ * @param {Boolean} maximizingPlayer - Indica si el jugador es el jugador maximizante
+ * @returns {Number} - El mejor movimiento disponible
+ */
 function getBestMove(board, maxEval, maximizingPlayer) {
   const validMoves = [];
   for (let column = 0; column < 7; column++) {
     if (isValidMove(board, column)) {
       const newBoard = makeMove(board, column, maximizingPlayer ? 1 : 2);
       if (hasWinner(newBoard, maximizingPlayer ? 1 : 2)) {
-        // Bloquear jugadas del oponente que lleven a la victoria
+        // Bloquear movimientos del oponente que lleven a la victoria
         continue;
       }
       const eval = alphabeta(newBoard, 0, -INF, INF, !maximizingPlayer);
@@ -231,7 +251,7 @@ function getBestMove(board, maxEval, maximizingPlayer) {
         validMoves.push(column);
         maxEval = eval;
       } else if (eval > maxEval && !maximizingPlayer) {
-        // Evaluar posiciones desfavorables
+        // Evaluar posiciones favorables
         validMoves.length = 0; // Vaciar el array
         validMoves.push(column);
         maxEval = eval;
