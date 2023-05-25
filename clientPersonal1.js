@@ -129,6 +129,7 @@ function makeMove(board, column, player) {
 
 function evaluate(board) {
   let score = 0;
+  const mobilityScore = getMobilityScore(board);
   for (let row of board) {
     for (let cell of row) {
       if (cell === 1) {
@@ -138,7 +139,17 @@ function evaluate(board) {
       }
     }
   }
-  return score;
+  return score + mobilityScore;
+}
+
+function getMobilityScore(board) {
+  let mobilityScore = 0;
+  for (let column = 0; column < 7; column++) {
+    if (isValidMove(board, column)) {
+      mobilityScore++;
+    }
+  }
+  return mobilityScore;
 }
 
 // Connect to the server
@@ -214,6 +225,16 @@ function getBestMove(board, maxEval, maximizingPlayer) {
       const eval = alphabeta(newBoard, 0, -INF, INF, !maximizingPlayer);
       if (eval === maxEval) {
         validMoves.push(column);
+      } else if (eval < maxEval && maximizingPlayer) {
+        // Evaluar posiciones desfavorables
+        validMoves.length = 0; // Vaciar el array
+        validMoves.push(column);
+        maxEval = eval;
+      } else if (eval > maxEval && !maximizingPlayer) {
+        // Evaluar posiciones desfavorables
+        validMoves.length = 0; // Vaciar el array
+        validMoves.push(column);
+        maxEval = eval;
       }
     }
   }
