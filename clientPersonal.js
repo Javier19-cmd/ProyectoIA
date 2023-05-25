@@ -207,6 +207,10 @@ function getBestMove(board, maxEval, maximizingPlayer) {
   for (let column = 0; column < 7; column++) {
     if (isValidMove(board, column)) {
       const newBoard = makeMove(board, column, maximizingPlayer ? 1 : 2);
+      if (hasWinner(newBoard, maximizingPlayer ? 1 : 2)) {
+        // Bloquear jugadas del oponente que lleven a la victoria
+        continue;
+      }
       const eval = alphabeta(newBoard, 0, -INF, INF, !maximizingPlayer);
       if (eval === maxEval) {
         validMoves.push(column);
