@@ -1,7 +1,6 @@
 const io = require('socket.io-client');
-const serverUrl = "http://192.168.5.122:4000";
+const serverUrl = "http://192.168.1.104:4000";
 const socket = io(serverUrl);
-
 
 const INF = Infinity;
 
@@ -167,7 +166,7 @@ socket.on('connect', () => {
 
   // Inicio de sesión en el torneo
   socket.emit('signin', {
-    user_name: "Willy",
+    user_name: "JavierV",
     tournament_id: 142857,
     user_role: 'player'
   });
@@ -187,7 +186,7 @@ socket.on('ready', function (data) {
   console.log("Board: ", board);
 
   const clonedBoard = board.map((row) => [...row]);
-  const depth = 6;
+  const depth = 4;
   const alpha = -INF;
   const beta = INF;
   const maximizingPlayer = playerTurnID;
@@ -257,7 +256,7 @@ function getBestMove(board, maxEval, maximizingPlayer) {
         validMoves.push(column);
         maxEval = eval;
       }
-      
+
       if (eval === bestEval) {
         bestMoves.push(column);
       } else if (eval > bestEval) {
@@ -292,7 +291,7 @@ function selectMoveBasedOnEvaluation(moves, maximizingPlayer, board) {
     const player = maximizingPlayer ? 1 : 2;
     const newBoard = makeMove(board, move, player);
     const eval = evaluate(newBoard);
-    
+
     if ((maximizingPlayer && eval > selectedEval) || (!maximizingPlayer && eval < selectedEval)) {
       selectedMove = move;
       selectedEval = eval;
