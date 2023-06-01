@@ -1,6 +1,7 @@
 const io = require('socket.io-client')
-const serverUrl = "http://192.168.1.134:4000"
+const serverUrl = "http://192.168.1.131:4000"
 const socket = io(serverUrl)
+
 const INF = Infinity;
 
 // Algoritmo Alpha-Beta
@@ -165,7 +166,7 @@ socket.on('connect', () => {
 
   // Inicio de sesión en el torneo
   socket.emit('signin', {
-    user_name: "Willy2",
+    user_name: "Willy",
     tournament_id: 142857,
     user_role: 'player'
   });
@@ -188,7 +189,7 @@ socket.on('ready', function (data) {
   const depth = 6;
   const alpha = -INF;
   const beta = INF;
-  const maximizingPlayer = playerTurnID === 1;
+  const maximizingPlayer = playerTurnID;
   const result = alphabeta(clonedBoard, depth, alpha, beta, maximizingPlayer);
   const move = getBestMove(clonedBoard, result, maximizingPlayer);
 
@@ -234,36 +235,68 @@ socket.on('finish', function (data) {
  */
 function getBestMove(board, maxEval, maximizingPlayer) {
   const validMoves = [];
+  const bestMoves = [];
+  let bestEval = -INF;
+
   for (let column = 0; column < 7; column++) {
     if (isValidMove(board, column)) {
       const newBoard = makeMove(board, column, maximizingPlayer ? 1 : 2);
       if (hasWinner(newBoard, maximizingPlayer ? 1 : 2)) {
-        // Bloquear movimientos del oponente que lleven a la victoria
         continue;
       }
       const eval = alphabeta(newBoard, 0, -INF, INF, !maximizingPlayer);
       if (eval === maxEval) {
         validMoves.push(column);
       } else if (eval < maxEval && maximizingPlayer) {
-        // Evaluar posiciones desfavorables
-        validMoves.length = 0; // Vaciar el array
+        validMoves.length = 0;
         validMoves.push(column);
         maxEval = eval;
       } else if (eval > maxEval && !maximizingPlayer) {
-        // Evaluar posiciones favorables
-        validMoves.length = 0; // Vaciar el array
+        validMoves.length = 0;
         validMoves.push(column);
         maxEval = eval;
+      }
+      
+      if (eval === bestEval) {
+        bestMoves.push(column);
+      } else if (eval > bestEval) {
+        bestMoves.length = 0;
+        bestMoves.push(column);
+        bestEval = eval;
       }
     }
   }
 
   console.log("Valid moves: ", validMoves);
+  console.log("Best moves: ", bestMoves);
 
-  if (validMoves.length > 0) {
-    return validMoves[Math.floor(Math.random() * validMoves.length)];
+  if (bestMoves.length > 0) {
+    // Seleccionar un movimiento basado en la evaluación
+    return selectMoveBasedOnEvaluation(bestMoves, maximizingPlayer, board);
+  } else if (validMoves.length > 0) {
+    // Seleccionar un movimiento basado en la evaluación
+    return selectMoveBasedOnEvaluation(validMoves, maximizingPlayer, board);
   } else {
     const availableColumns = board[0].map((_, index) => index);
     return availableColumns[Math.floor(Math.random() * availableColumns.length)];
   }
+}
+
+// Función para seleccionar un movimiento basado en la evaluación
+function selectMoveBasedOnEvaluation(moves, maximizingPlayer, board) {
+  let selectedMove = moves[0];
+  let selectedEval = maximizingPlayer ? -INF : INF;
+
+  for (const move of moves) {
+    const player = maximizingPlayer ? 1 : 2;
+    const newBoard = makeMove(board, move, player);
+    const eval = evaluate(newBoard);
+    
+    if ((maximizingPlayer && eval > selectedEval) || (!maximizingPlayer && eval < selectedEval)) {
+      selectedMove = move;
+      selectedEval = eval;
+    }
+  }
+
+  return selectedMove;
 }
